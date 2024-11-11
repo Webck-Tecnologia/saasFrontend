@@ -21,50 +21,56 @@ export function SocketContextProvider({ children }) {
       }
 
       try {
-        // Limpa socket anterior se existir
         if (socketInstance) {
           socketInstance.disconnect();
         }
 
-        // Configura novo socket
         socketInstance = io(import.meta.env.VITE_WS_URL || 'https://saas.bchat.com.br', {
           reconnection: true,
           reconnectionDelay: 1000,
           reconnectionDelayMax: 5000,
           reconnectionAttempts: 5,
+          withCredentials: true,
+          transports: ['websocket', 'polling'],
           query: {
             userId: authUser.id,
             workspaceId: authUser.activeWorkspaceId
+          },
+          cors: {
+            origin: "https://disparador.bchat.lat",
+            methods: ["GET", "POST"],
+            allowedHeaders: ["content-type"],
+            credentials: true
           }
         });
 
-        // Handlers de conexão
         socketInstance.on('connect', () => {
-          console.log('🔌 Socket conectado');
+          console.log('✅ Socket conectado!');
           setIsConnected(true);
-          toast({
-            title: "Conectado",
-            description: "Conectado ao servidor com sucesso"
-          });
+          setSocket(socketInstance);
         });
 
-        socketInstance.on('disconnect', () => {
-          console.log('🔌 Socket desconectado');
+        socketInstance.on('disconnect', (reason) => {
+          console.log('❌ Socket desconectado:', reason);
           setIsConnected(false);
-          toast({
-            variant: "destructive",
-            title: "Desconectado",
-            description: "Desconectado do servidor. Tentando reconectar..."
-          });
         });
 
         socketInstance.on('connect_error', (error) => {
           console.error('❌ Erro de conexão:', error);
-          toast({
-            variant: "destructive",
-            title: "Erro de conexão",
-            description: "Erro ao conectar com o servidor"
-          });
+          if (error.message.includes('CORS')) {
+            console.error('Erro de CORS detectado. Verificando configurações...');
+            toast({
+              variant: "destructive",
+              title: "Erro de CORS",
+              description: "Erro de permissão de acesso ao servidor. Por favor, contate o suporte."
+            });
+          } else {
+            toast({
+              variant: "destructive",
+              title: "Erro de conexão",
+              description: "Não foi possível conectar ao servidor. Tentando reconectar..."
+            });
+          }
         });
 
         socketInstance.on('reconnect', (attemptNumber) => {
@@ -92,20 +98,18 @@ export function SocketContextProvider({ children }) {
           });
         });
 
-        setSocket(socketInstance);
       } catch (error) {
         console.error('❌ Erro ao criar socket:', error);
         toast({
           variant: "destructive",
-          title: "Erro de conexão",
-          description: "Erro ao estabelecer conexão com o servidor"
+          title: "Erro",
+          description: "Não foi possível estabelecer conexão com o servidor"
         });
       }
     };
 
     connectSocket();
 
-    // Cleanup
     return () => {
       if (socketInstance) {
         console.log('👋 Desconectando socket...');
