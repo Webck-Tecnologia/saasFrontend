@@ -27,7 +27,7 @@ function App() {
         <Route path='/' element={<HomePage />} />
         <Route 
           path='/auth' 
-          element={authUser ? <Navigate to="/app" /> : <AuthPage />} 
+          element={authUser ? <Navigate to="/app/campanhas" /> : <AuthPage />} 
         />
         <Route path='/login' element={<AuthPage />} />
         <Route path='/cadastro' element={<AuthPage />} />
@@ -36,7 +36,7 @@ function App() {
           path='/app'
           element={<AppLayout />}
         > 
-          <Route index element={<WebAppPage />} />
+          <Route index element={<Navigate to="/app/campanhas" replace />} />
           <Route path='chat' element={<ChatPage />} />
           <Route path='campanhas' element={<CampanhasLayout />}>
             <Route index element={<Dashboard />} />
